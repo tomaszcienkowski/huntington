@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>Huntington's Disease</title>
+    <link href="styles.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="background">
+      <div class="video-container">
+        <div class="color-overlay"></div>
+        <video autoplay loop muted>
+          <source src="DNA-rotation.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="content">
+        <h1> Huntington's Disease Risk Assessment </h1>
+        <section id="home">
+          <div class="textbox">
+            <p> Huntington's disease is a neurodegenerative disease which results in uncontrolled movements, 
+              loss of intellectual abilities, and suicidal behavior. The disease is heritable. Because symptoms often 
+              become visible between ages 35 to 44 years, young individuals may not be aware that they carry mutations.
+              It is therefore imperative to use available diagnostic tools before making reproductive decisions in order to 
+              estimate the risk that one's offspring will inherit such mutations and consequently develop the Huntington's 
+              disease. If the risk were sufficiently large, it would be recommended to use prenatal techniques, such as embryo 
+              screening, to lower it.
+            </p>
+            <p> This webpage is designed to estimate the risk that your offspring will develop the Huntington's disease.
+              Once you upload two DNA sequences of the huntingtin gene (HTT) from yourself and your partner, the program 
+              will analyze all the possible scenarios of inheritance in your potential offspring and generate a risk 
+              assessment report. 
+            </p>
+          </div>
+          <div class="button-container">
+            <button onclick="displayFileInput()">Continue</button>
+          </div>
+        </section>
+        <section id="file-input" style="display:none">
+          <div class ="filebox">
+            <label for="inputA">Upload both your HTT sequences</label>
+            <button id="buttonA">Select two .txt files</button>
+            <input type="file" id="inputA" onclick="processFiles()" accept="text/plain" style="display:none" multiple="2" required>
+            <br>
+            <label for="inputB">Upload both your partner's HTT sequences</label>
+            <button id="buttonB">Select two .txt files</button>
+            <input type="file" id="inputB" onclick="processFiles()" accept="text/plain" style="display:none" multiple="2" required>
+          </div>    
+          <div class="button-container">
+            <button onclick="displayHome()">Home</button>
+            <button id="results" onclick="findProbability(); displayReport()" disabled>Results</button>
+          </div>
+        </section>
+        <section id="report" style="display:none">
+        <div class="textbox">
+          <h2>Risk Assessment Report</h2>
+          <ul id="list"></ul>
+          <p style="font-style: italic;"> I would like to say a special thank you to Olivia Meyerson, a graduate student in Hopi Hoekstra's 
+            lab and my former LS 1b Teaching Fellow, whose knowledge and willingness to help were inestimable 
+            to this project.
+          </p>
+        </div>
+        <div class="button-container">
+          <button onclick="displayHome()">Home</button>
+        </div>
+        </section>
+        <p>
+          Stock footage by <a target="_blank" href="http://www.videezy.com">Videezy.com</a>
+        </p>
+      </div>
+    </div>
+
+    <script src="//unpkg.com/string-similarity/umd/string-similarity.min.js"></script>
+    <script src="display.js"></script>
+
+    <script>
+    // Create arrays to store file contents and triplets found in these files
+    let fileContentsA  = [];
+    let fileContentsB = [];
+    let tripletsA =[];
+    let tripletsB = [];
+    // Link buttons with file inputs
+    document.querySelector("#buttonA").onclick = function() {
+      document.querySelector("#inputA").click() 
+    }
+    document.querySelector("#buttonB").onclick = function() {
+      document.querySelector("#inputB").click() 
+    }
+    function processFiles (eventObject) {
+      var inputId = this.event.target.id
+      this.event.target.onchange = function () {     
+        var fileList = this.files
+        // Turn files from a list into an array
+        var fileArray = [fileList[0], fileList[1]]
+        // Ensure the user uploaded two files per person
+	      if (fileArray.length != 2) {
+		    alert("Error: Please upload both .txt files.")
+        return
+        }     
+      fileArray.forEach(function(file, idx){
+        var reader = new FileReader()
+        reader.addEventListener('loadstart', function() {
+          console.log('File reading started')
+        })
+        // Save file contents and the number of triplets
+        reader.addEventListener('load', function(id) {
+          if (inputId == "inputA") {
+            fileContentsA.push(reader.result)
+            tripletsA[idx] = countTriplets(fileContentsA[idx])
+            enableButton()
+          } else {
+            fileContentsB.push(reader.result)
+            tripletsB[idx] = countTriplets(fileContentsB[idx])
+            enableButton()
+          } 
+        })
+        reader.addEventListener('error', function() {
+          alert('Error : Failed to read file')
+          displayReport()
+        })
+        reader.readAsText(file)
+        })
+      }
+    }
+    function countTriplets(fileContent) {
+      // Slice the file into 100-letter-long pieces  
+      let slices = fileContent.match(/[\s\S]{1,100}/g) || [];
+      // A 100-letter-long sequence around the start of Exon 1
+      let targetSequence = "CGGCCCGAGGCCTCCGGGGACTGCCGTGCCGGGCGGGAGACCGCCATGGCGACCCTGGAAAAGCTGATGAAGGCCTTCGAGTCCCTCAAGTCCTTCCAGC";
+      // Find the index of the slice that matches the target sequence most closely 
+      let exonStart = stringSimilarity.findBestMatch(targetSequence, slices).bestMatchIndex;
+      // Extract Exon 1 from the file (max length ever recorded 803)
+      let exon = fileContent.slice(exonStart * 100, exonStart * 100 + 803);
+      // Remove whitespace characters in Exon 1
+      let cleanExon = exon.replace(/[\r\n]/g, '')
+      // Replace all CAG triplets in Exon 1 with exclamation marks
+      re = new RegExp(/CAG/, 'g')
+      cleanExon = cleanExon.replace(re, "!")
+      // Convert Exon 1 from a string into an array
+      let cleanExonArr = cleanExon.split('')
+      // Find the longest consecutive chain of !'s in the exon
+      let current = 0
+      let longest = 0
+      cleanExonArr.forEach(function(letter){
+        if (letter == "!") {
+          current++
+      } else {
+        if (current > longest) {
+          longest = current
+        }
+        current = 0;
+        }
+      }); 
+      // Verify that the longest chain comes from Exon 1
+      let longestEnd = (exonStart + 1) * 100 + (longest * 3 ) - 1;
+      let testSequence = fileContent.slice(longestEnd, longestEnd + 100)
+      // Use a 100-nucleotides-long sequence expected after the end of the longest chain
+      let verificationSequence = "CAGCCGCCACCGCCGCCGCCGCCGCCGCCGCCTCCTCAGCTTCCTCAGCCGCCGCCGCAGGCACAGCCGCTGCTGCCTCAGCCGCAGCCGCCCCCGCCGC"
+      if (stringSimilarity.compareTwoStrings(testSequence, verificationSequence) < 0.8) {
+        var item = document.createElement("li")
+        var text = document.createTextNode("The uploaded DNA sequence shows suspicious divergence from genomic library. Risk assessment unreliable.")
+        document.getElementById("list").appendChild(item)
+        displayReport()
+      }
+      return longest
+    }
+    function findProbability() {
+      let alleles ={}
+      // Find all the possible pairs of triplets
+      tripletsA.forEach( alleleA => {
+        tripletsB.forEach ( alleleB => {
+          // Determine the dominant allele in each pair and its probability
+          let dominant = (alleleA > alleleB) ? alleleA : alleleB
+          if (dominant in alleles) {
+            alleles[dominant] += 25
+          } else {
+            alleles[dominant] = 25
+          }
+        })
+      });
+      let report = [];
+      for (allele in alleles) {
+        let pr = alleles[allele]
+        let outcome = predictOutcome(allele)
+        let line = pr + "% probability for inheriting the dominant allele with " + allele + " Huntington triplets in which case " + outcome
+        report.push(line)
+      }
+      // Fill the report section based on the possible outcomes
+      report.forEach( line => {
+        var item = document.createElement("li")
+        var text = document.createTextNode(line)
+        item.appendChild(text)
+        document.getElementById("list").appendChild(item)
+      })
+    }
+    // Display predicted outcomes based on the number of triplets in the dominant allele
+    function predictOutcome(dominantAllele) {
+      if (dominantAllele <= 26 ) {
+        return("the offspring will not develop the disease.");
+      } else if (dominantAllele > 26 && dominantAllele <= 35) {
+        return("the offspring will not develop the disease unless a spontaneous mutation occurs. Embryo screening/ IVF recommended.");
+      } else if (dominantAllele > 35 && dominantAllele <= 39) {
+        return("the offspring will develop the disease and display some of the symptoms. Embryo screening/ IVF strongly recommended.");
+      } else if (dominantAllele > 39 && dominantAllele <= 59) {
+        return("the offspring will develop the disease and display all of the symptoms starting in adulthood. Embryo screening/ IVF strongly recommended.");
+      } else {
+        return("the offspring will develop the disease and display all of the symptoms starting in adolescence. Embryo screening/ IVF strongly recommended.");
+      }
+    } 
+    </script>
+  </body>
+</html>
