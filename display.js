@@ -1,6 +1,6 @@
 function displayFileInput() {
   document.querySelector("#home").style.display = "None"
-  document.querySelector("#fileinput").style.display = "Block"
+  document.querySelector("#file-input").style.display = "Block"
   document.querySelector("#report").style.display = "None"
   enableButton()
 }
