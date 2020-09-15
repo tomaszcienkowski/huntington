@@ -11,7 +11,7 @@
       <div class="video-container">
         <div class="color-overlay"></div>
         <video autoplay loop muted>
-          <source src="DNA-rotation.mp4" type="video/mp4">
+          <source id="DNA-video" src="DNA-rotation.mp4" type="video/mp4">
         </video>
       </div>
       <div class="content">
@@ -158,6 +158,7 @@
       if (stringSimilarity.compareTwoStrings(testSequence, verificationSequence) < 0.8) {
         var item = document.createElement("li")
         var text = document.createTextNode("The uploaded DNA sequence shows suspicious divergence from genomic library. Risk assessment unreliable.")
+        item.appendChild(text)
         document.getElementById("list").appendChild(item)
         displayReport()
       }
